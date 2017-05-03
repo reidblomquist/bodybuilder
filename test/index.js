@@ -569,6 +569,64 @@ test('bodybuilder | minimum_should_match query', (t) => {
   })
 })
 
+test('bodybuilder | minimum_should_match query with must query', (t) => {
+  t.plan(1)
+
+  const result = bodyBuilder()
+    .query('term', 'type', 'user')
+    .orQuery('term', 'user', 'kimchy')
+    .orQuery('term', 'user', 'tony')
+    .queryMinimumShouldMatch(2)
+    .build()
+
+  t.deepEqual(result,
+  {
+    query: {
+      bool: {
+        must: [
+          {term: {type: 'user'}}
+        ],
+        should: [
+          {term: {user: 'kimchy'}},
+          {term: {user: 'tony'}}
+        ],
+        minimum_should_match: 2
+      }
+    }
+  })
+})
+
+test('bodybuilder | minimum_should_match query with must query (procedurally built)', (t) => {
+  t.plan(1)
+
+  const body = bodyBuilder()
+  const userTerms = ['kimchy', 'tony']
+
+  body.query('term', 'type', 'user')
+  userTerms.forEach((term) => body.orQuery('prefix', 'user', term))
+  body.orQuery('term', 'user', 'dogTheBugHunter')
+  body.queryMinimumShouldMatch(2)
+
+  const result = body.build()
+
+  t.deepEqual(result,
+  {
+    query: {
+      bool: {
+        must: [
+          {term: {type: 'user'}}
+        ],
+        should: [
+          {prefix: {user: 'kimchy'}},
+          {prefix: {user: 'tony'}},
+          {term: {user: 'dogTheBugHunter'}}
+        ],
+        minimum_should_match: 2
+      }
+    }
+  })
+})
+
 test('bodybuilder | minimum_should_match query and filter', (t) => {
   t.plan(1)
 
